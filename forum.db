@@ -1,0 +1,100 @@
+import sqlite3
+
+# Initialise la base de données
+def initialiser_base_de_donnees():
+    conn = sqlite3.connect('forum.db')
+    cursor = conn.cursor()
+
+    # Création de la table pour les utilisateurs
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS utilisateurs (
+            id INTEGER PRIMARY KEY,
+            nom_utilisateur TEXT NOT NULL,
+            mot_de_passe TEXT NOT NULL
+        )
+    ''')
+
+    # Création de la table pour les sujets
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS sujets (
+            id INTEGER PRIMARY KEY,
+            titre TEXT NOT NULL,
+            auteur_id INTEGER NOT NULL,
+            date_creation TEXT NOT NULL,
+            FOREIGN KEY (auteur_id) REFERENCES utilisateurs(id)
+        )
+    ''')
+
+    # Création de la table pour les messages
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS messages (
+            id INTEGER PRIMARY KEY,
+            sujet_id INTEGER,
+            contenu TEXT NOT NULL,
+            auteur_id INTEGER NOT NULL,
+            date_creation TEXT NOT NULL,
+            FOREIGN KEY (sujet_id) REFERENCES sujets(id),
+            FOREIGN KEY (auteur_id) REFERENCES utilisateurs(id)
+        )
+    ''')
+
+    conn.commit()
+    conn.close()
+
+# Ajoute un nouvel utilisateur
+def ajouter_utilisateur(nom_utilisateur, mot_de_passe):
+    conn = sqlite3.connect('forum.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO utilisateurs (nom_utilisateur, mot_de_passe)
+        VALUES (?, ?)
+    ''', (nom_utilisateur, mot_de_passe))
+    conn.commit()
+    conn.close()
+
+# Ajoute un nouveau sujet
+def ajouter_sujet(titre, auteur_id, date_creation):
+    conn = sqlite3.connect('forum.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO sujets (titre, auteur_id, date_creation)
+        VALUES (?, ?, ?)
+    ''', (titre, auteur_id, date_creation))
+    conn.commit()
+    conn.close()
+
+# Ajoute un nouveau message à un sujet
+def ajouter_message(sujet_id, contenu, auteur_id, date_creation):
+    conn = sqlite3.connect('forum.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO messages (sujet_id, contenu, auteur_id, date_creation)
+        VALUES (?, ?, ?, ?)
+    ''', (sujet_id, contenu, auteur_id, date_creation))
+    conn.commit()
+    conn.close()
+
+# Récupère les messages d'un sujet avec pagination
+def recuperer_messages_sujet(sujet_id, page=1, messages_par_page=10):
+    conn = sqlite3.connect('forum.db')
+    cursor = conn.cursor()
+    debut = (page - 1) * messages_par_page
+    fin = debut + messages_par_page
+    cursor.execute('''
+        SELECT id, contenu, auteur_id, date_creation
+        FROM messages
+        WHERE sujet_id = ?
+        ORDER BY date_creation DESC
+        LIMIT ?, ?
+    ''', (sujet_id, debut, messages_par_page))
+    messages = cursor.fetchall()
+    conn.close()
+    return messages
+
+# Exemple d'utilisation
+if __name__ == '__main__':
+    initialiser_base_de_donnees()
+    ajouter_utilisateur("utilisateur1", "motdepasse1")
+    ajouter_utilisateur("utilisateur2", "motdepasse2")
+    ajouter_sujet("Premier sujet", 1, "2024-03-10")
+    ajouter_message(1, "Ceci est le premier message du forum.", 2, "2024-03-10")
